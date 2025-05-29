@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cybersecurity IP Scanner</title>
+  <link rel="stylesheet" href="IPSEARCH.CSS" />
+</head>
+<body>
+  <div class="container">
+    <h1>Cybersecurity IP Scanner</h1>
+    <div class="search-box">
+      <input type="text" id="ipInput" placeholder="Enter IP address" autocomplete="off" />
+      <button id="searchBtn">Search</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div id="resultBox" class="hidden">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const searchBtn = document.getElementById("searchBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const ipInput = document.getElementById("ipInput");
+    const resultBox = document.getElementById("resultBox");
+    const resultBody = document.getElementById("resultBody");
+
+    searchBtn.addEventListener("click", () => {
+      const ip = ipInput.value.trim();
+      if (!ip) {
+        alert("Please enter an IP address.");
+        return;
+      }
+
+      // Sample static data — replace with API call later
+      const sampleData = {
+        IP: ip,
+        Malicious: 3,
+        Suspicious: 1,
+        Harmless: 45,
+        Undetected: 10,
+        Verdict: "Malicious"
+      };
+
+      resultBody.innerHTML = "";
+
+      for (const [field, value] of Object.entries(sampleData)) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${field}</td><td>${value}</td>`;
+        resultBody.appendChild(row);
+      }
+
+      resultBox.classList.remove("hidden");
+    });
+
+    resetBtn.addEventListener("click", () => {
+      ipInput.value = "";
+      resultBody.innerHTML = "";
+      resultBox.classList.add("hidden");
+    });
+  </script>
+</body>
+</html>

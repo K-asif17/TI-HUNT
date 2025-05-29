@@ -1,0 +1,14 @@
+curl -X POST http://127.0.0.1:5000/scan-url \
+     -H "Content-Type: application/json" \
+     -d '{"url": "https://example.com"}'
+
+curl -X POST http://127.0.0.1:5000/scan-ip \
+     -H "Content-Type: application/json" \
+     -d '{"ip": "8.8.8.8"}'
+
+curl -X POST http://127.0.0.1:5000/scan-domain \
+     -H "Content-Type: application/json" \
+     -d '{"domain": "example.com"}'
+
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+

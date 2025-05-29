@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cybersecurity URL Scanner</title>
+  <link rel="stylesheet" href="URLSCAN.CSS" />
+</head>
+<body>
+  <div class="container">
+    <h1>Cybersecurity URL Scanner</h1>
+    <div class="search-box">
+      <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://example.com)" />
+      <button id="searchBtn">Search</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div id="resultBox" class="hidden">
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const searchBtn = document.getElementById("searchBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const urlInput = document.getElementById("urlInput");
+    const resultBox = document.getElementById("resultBox");
+    const resultBody = document.getElementById("resultBody");
+
+    searchBtn.addEventListener("click", () => {
+      const url = urlInput.value.trim();
+      if (!url) {
+        alert("Please enter a valid URL.");
+        return;
+      }
+
+      // Sample data
+      const sampleResult = {
+        URL: url,
+        "Malicious Engines": 2,
+        "Suspicious Engines": 1,
+        "Harmless Engines": 67,
+        "Undetected Engines": 4,
+        "Final Verdict": "Suspicious"
+      };
+
+      resultBody.innerHTML = "";
+
+      for (const [key, value] of Object.entries(sampleResult)) {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${key}</td><td>${value}</td>`;
+        resultBody.appendChild(row);
+      }
+
+      resultBox.classList.remove("hidden");
+    });
+
+    resetBtn.addEventListener("click", () => {
+      urlInput.value = "";
+      resultBody.innerHTML = "";
+      resultBox.classList.add("hidden");
+    });
+  </script>
+</body>
+</html>
