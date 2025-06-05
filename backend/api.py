@@ -2,7 +2,7 @@ import requests
 import time
 import base64
 
-VT_API_KEY = "71f6147fcc78d7441abc24bfef676a35f4abfc8036ad6019030b118fd9d8419d"
+VT_API_KEY = "YOUR_VIRUSTOTAL_API_KEY"  # Replace with your actual API key
 HEADERS = {"x-apikey": VT_API_KEY}
 
 def scan_url(url):
