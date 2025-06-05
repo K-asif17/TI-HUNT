@@ -1,0 +1,77 @@
+.url-container {
+  text-align: center;
+  padding: 2rem;
+  font-family: Arial, sans-serif;
+}
+
+.logo {
+  height: 80px;
+  margin-bottom: 1rem;
+}
+
+.search-box {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.search-box input {
+  padding: 10px;
+  width: 250px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.search-box button {
+  padding: 10px 20px;
+  background-color: #1f8ef1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.reset-btn {
+  background-color: #e74c3c;
+}
+
+.result-box {
+  margin-top: 30px;
+  text-align: left;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow-x: auto; /* Enable horizontal scroll if table is too wide */
+}
+
+.result-box h3 {
+  color: #333;
+  margin-top: 20px;
+}
+
+.result-box ul {
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.result-box table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  max-width: 100%;    /* Prevent overflow */
+  table-layout: auto; /* Let columns size based on content */
+}
+
+.result-box th,
+.result-box td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+  word-break: break-word; /* Break long words or URLs */
+}
+
+.result-box th {
+  background-color: #f5f5f5;
+}
