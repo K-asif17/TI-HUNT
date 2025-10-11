@@ -1,16 +1,153 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS  # Allow requests from React frontend
-from api import scan_url, scan_ip, scan_domain, scan_file,scan_hash
+from flask import Flask, request, jsonify, send_file, session
+from flask_cors import CORS
+from flask_migrate import Migrate
+from auth import auth_bp, bcrypt, db, User, LoginLog  # Importing models and instances
+from api import scan_url, scan_ip, scan_domain, scan_file, scan_hash
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from io import BytesIO
+from datetime import datetime
+import re, os
+import csv  # Required for reading the threat feeds
+
 
 app = Flask(__name__)
-  # Enable CORS
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+app.secret_key = 'super-secret-key'
 
+# === Database Config ===
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///user.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+bcrypt.init_app(app)
+migrate = Migrate(app, db)
 
+# === Register Auth Blueprint ===
+app.register_blueprint(auth_bp)
+
+# === Home Route ===
 @app.route("/")
 def home():
     return "TI-HUNT VirusTotal Backend is running."
 
+# === Favicon ===
+@app.route('/favicon.ico')
+def favicon():
+    return send_file(os.path.join(app.root_path, 'static/favicon.ico'), mimetype='image/vnd.microsoft.icon')
+
+# === Analyze Log ===
+@app.route('/analyze-log', methods=['POST'])
+def analyze_log():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    content = file.read().decode('utf-8')
+    results = {
+        'critical': [],
+        'warning': [],
+        'info': [],
+        'iocs': {'ips': [], 'urls': [], 'hashes': []}
+    }
+
+    ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+    url_pattern = r'\bhttps?://[^\s<>"\']+|www\.[^\s<>"\']+\b'
+    hash_pattern = r'\b[a-fA-F\d]{32,64}\b'
+
+    for line in content.splitlines():
+        lower_line = line.lower()
+        if "critical" in lower_line:
+            results['critical'].append(line)
+        elif "warning" in lower_line:
+            results['warning'].append(line)
+        elif "info" in lower_line:
+            results['info'].append(line)
+
+        results['iocs']['ips'] += re.findall(ip_pattern, line)
+        results['iocs']['urls'] += re.findall(url_pattern, line)
+        results['iocs']['hashes'] += re.findall(hash_pattern, line)
+
+    # Deduplicate
+    for key in results['iocs']:
+        results['iocs'][key] = list(set(results['iocs'][key]))
+
+    return jsonify(results)
+
+# === Download PDF Report ===
+@app.route('/download-report', methods=['POST'])
+def download_report():
+    data = request.get_json()
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    logo_path = os.path.abspath(os.path.join(app.root_path, "..", "frontend", "src", "assets", "cyveon.jpeg"))
+    if os.path.exists(logo_path):
+        c.drawImage(logo_path, 40, height - 80, width=60, height=60, mask='auto')
+    c.setFont("Helvetica-Bold", 22)
+    c.drawString(110, height - 50, "TI-HUNT Log Analysis Report")
+
+    c.setFont("Helvetica", 11)
+    scan_time = data.get('scan_time', datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    filename = data.get('filename', 'N/A')
+    c.drawString(40, height - 100, f"File Name: {filename}")
+    c.drawString(40, height - 115, f"Scan Time: {scan_time}")
+
+    y = height - 140
+
+    def draw_section(title, items, color):
+        nonlocal y
+        if not items:
+            return
+        c.setFillColor(color)
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(40, y, f"{title} ({len(items)})")
+        y -= 15
+        c.setFillColor("black")
+        c.setFont("Helvetica", 11)
+        for item in items:
+            if y < 40:
+                c.showPage()
+                y = height - 40
+            c.drawString(50, y, f"- {item}")
+            y -= 15
+        y -= 10
+
+    draw_section("Critical Logs", data.get("critical", []), colors.red)
+    draw_section("Warning Logs", data.get("warning", []), colors.orange)
+    draw_section("Info Logs", data.get("info", []), colors.blue)
+
+    def draw_iocs(title, values):
+        nonlocal y
+        if not values:
+            return
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(50, y, f"{title}:")
+        y -= 15
+        c.setFont("Helvetica", 11)
+        for val in values:
+            if y < 40:
+                c.showPage()
+                y = height - 40
+            c.drawString(70, y, f"- {val}")
+            y -= 15
+        y -= 10
+
+    iocs = data.get("iocs", {})
+    draw_iocs("IP Addresses", iocs.get("ips", []))
+    draw_iocs("URLs", iocs.get("urls", []))
+    draw_iocs("Hashes", iocs.get("hashes", []))
+
+    c.setFont("Helvetica-Oblique", 10)
+    c.setFillColor("gray")
+    c.drawString(40, 20, "Generated by TI-HUNT © 2025")
+
+    c.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="log_analysis_report.pdf", mimetype='application/pdf')
+
+# === VirusTotal Scan Routes ===
 def extract_required_data(vt_response):
     try:
         attributes = vt_response.get("data", {}).get("attributes", {})
@@ -26,44 +163,28 @@ def scan_url_route():
     data = request.json
     if not data or "url" not in data:
         return jsonify({"error": "Missing 'url' in request"}), 400
-    try:
-        result = scan_url(data["url"])
-        return jsonify(extract_required_data(result))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(extract_required_data(scan_url(data["url"])))
 
 @app.route("/scan-ip", methods=["POST"])
 def scan_ip_route():
     data = request.json
     if not data or "ip" not in data:
         return jsonify({"error": "Missing 'ip' in request"}), 400
-    try:
-        result = scan_ip(data["ip"])
-        return jsonify(extract_required_data(result))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(extract_required_data(scan_ip(data["ip"])))
 
 @app.route("/scan-domain", methods=["POST"])
 def scan_domain_route():
     data = request.json
     if not data or "domain" not in data:
         return jsonify({"error": "Missing 'domain' in request"}), 400
-    try:
-        result = scan_domain(data["domain"])
-        return jsonify(extract_required_data(result))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(extract_required_data(scan_domain(data["domain"])))
 
 @app.route("/scan-hash", methods=["POST"])
 def scan_hash_route():
     data = request.json
     if not data or "hash" not in data:
         return jsonify({"error": "Missing 'hash' in request"}), 400
-    try:
-        result = scan_hash(data["hash"])
-        return jsonify(extract_required_data(result))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(extract_required_data(scan_hash(data["hash"])))
 
 @app.route("/scan-file", methods=["POST"])
 def scan_file_route():
@@ -72,11 +193,93 @@ def scan_file_route():
     file = request.files['file']
     if file.filename == '':
         return jsonify({"error": "No file selected"}), 400
+    return jsonify(extract_required_data(scan_file(file)))
+
+# === Admin Utility Routes ===
+
+@app.route('/all-users')
+def all_users():
+    users = User.query.all()
+    return jsonify({
+        "users": [{
+            "id": u.id,
+            "name": u.name,
+            "email": u.email,
+            "password": u.password,  # Hashed password
+            "created_at": u.created_at.isoformat() if u.created_at else None
+        } for u in users]
+    })
+@app.route('/login-logs')
+def login_logs():
+    logs = LoginLog.query.order_by(LoginLog.time.desc()).all()
+    return jsonify({
+        "logs": [{
+            "id": l.id,
+            "email": l.email,
+            "time": l.time.isoformat()
+        } for l in logs]
+    })
+@app.route("/api/threat-feed", methods=["GET"])
+def threat_feed():
+    import csv
+    import requests
+
+    threat_feed = []
+
+    # === URLHaus CSV (Malicious URLs)
+    urlhaus_csv_url = "https://urlhaus.abuse.ch/downloads/csv_recent/"
     try:
-        result = scan_file(file)
-        return jsonify(extract_required_data(result))
+        response = requests.get(urlhaus_csv_url)
+        lines = response.content.decode("utf-8", errors="ignore").splitlines()
+        reader = csv.reader(lines)
+        count = 0
+        for row in reader:
+            if len(row) < 6 or row[0].startswith("#"):
+                continue
+            threat_feed.append({
+                "Type": "URL",
+                "Indicator": row[2],
+                "Threat": row[6],
+                "Confidence": "High",
+                "Source": "URLHaus",
+                "First Seen": row[4],
+                "Last Seen": row[5]
+            })
+            count += 1
+        print(f"[+] Fetched {count} URLs from URLHaus")
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("[-] Failed to fetch URLHaus:", e)
+
+    # === Feodo Tracker IPs (Malicious IPs)
+    feodo_csv_url = "https://feodotracker.abuse.ch/downloads/ipblocklist.csv"
+    try:
+        response = requests.get(feodo_csv_url)
+        lines = response.content.decode("utf-8", errors="ignore").splitlines()
+        reader = csv.reader(lines)
+        count = 0
+        for row in reader:
+            if len(row) < 2 or row[0].startswith("#"):
+                continue
+            threat_feed.append({
+                "Type": "IP",
+                "Indicator": row[0],
+                "Threat": row[1] if len(row) > 1 else "C2",
+                "Confidence": "High",
+                "Source": "Feodo Tracker",
+                "First Seen": "Unknown",
+                "Last Seen": "Recent"
+            })
+            count += 1
+        print(f"[+] Fetched {count} IPs from Feodo Tracker")
+    except Exception as e:
+        print("[-] Failed to fetch Feodo Tracker:", e)
+
+    
+    MAX_FEED = 10
+    return jsonify(threat_feed[:MAX_FEED])
+
 
 if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
     app.run(debug=True)

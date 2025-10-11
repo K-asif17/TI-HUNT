@@ -1,0 +1,61 @@
+.feed-wrapper {
+  padding: 2rem;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+  background-color: #111827;
+  min-height: 100vh;
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+select, input[type="checkbox"], .export-btn {
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.export-btn {
+  background-color: #10b981;
+  color: white;
+  border: none;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+}
+
+.feed-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.feed-table th, .feed-table td {
+  padding: 0.75rem;
+  border: 1px solid #374151;
+  text-align: center;
+}
+
+.feed-table th {
+  background-color: #1f2937;
+}
+
+.high {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+.medium {
+  color: #f59e0b;
+}
+
+.low {
+  color: #9ca3af;
+}

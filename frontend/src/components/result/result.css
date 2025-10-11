@@ -1,0 +1,33 @@
+.results-container {
+  padding: 20px;
+  background-color: #0f172a;
+  color: #fff;
+  min-height: 100vh;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 40px;
+}
+
+.results-table th,
+.results-table td {
+  border: 1px solid #334155;
+  padding: 10px;
+  text-align: left;
+}
+
+.results-table th {
+  background-color: #1e293b;
+}
+
+.results-table tr:nth-child(even) {
+  background-color: #1f2937;
+}
+.truncate-password {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

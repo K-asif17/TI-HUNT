@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+// LoginPage.jsx
+import React, { useState } from 'react';
 import './login.css';
-
 import logo from '../assets/cyveon.jpeg';
+// import LogAnalysisPage from '../components/mainpage/mainpage';
+import { useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
+  
+  const navigate = useNavigate();
   const [isSignup, setIsSignup] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -12,42 +16,34 @@ const LoginPage = () => {
     confirmPassword: '',
     remember: false,
   });
-
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
-    });
+    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
     setErrors({ ...errors, [name]: '' });
   };
 
-  const togglePassword = (e) => {
-    const input = e.target.previousSibling;
-    input.type = input.type === 'password' ? 'text' : 'password';
-    e.target.classList.toggle('show');
-  };
-
   const validate = () => {
-    let valid = true;
     let newErrors = {};
+    let valid = true;
 
     if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Please enter a valid email';
       valid = false;
     }
 
     if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
+      newErrors.password = 'Password must be at least 8 characters';
       valid = false;
     }
 
     if (isSignup) {
-      if (formData.name.trim().length < 2) {
-        newErrors.name = 'Please enter your full name';
+      if (!formData.name.trim()) {
+        newErrors.name = 'Name is required';
         valid = false;
       }
       if (formData.password !== formData.confirmPassword) {
@@ -60,135 +56,141 @@ const LoginPage = () => {
     return valid;
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validate()) {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        alert('Form submitted successfully!');
-      }, 2000);
+ 
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!validate()) return;
+
+  setLoading(true);
+  const url = isSignup ? 'http://localhost:5000/signup' : 'http://localhost:5000/login';
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      if (isSignup) {
+        alert("Signup successful! Please log in.");
+        setIsSignup(false); // Switch to login form
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          remember: false,
+        });
+      } else {
+        alert("Login successful!");
+        navigate('/main');
+      }
+    } else {
+      alert(isSignup ? (result.error || "Signup failed.") : (result.error || "Login failed."));
     }
-  };
+
+  } catch (err) {
+    console.error("Error:", err);
+    alert("Server error. Try again later.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  
 
   return (
-    <div className="container">
-      <div className="panel left-panel">
-        <div className="content">
-          <div className="brand">
-            <div className="brand-header">
-              <img src={logo} alt="TI-Hunt Logo" className="logo" />
-              <h1>TI-Hunt</h1>
-            </div>
-            <p className="tagline">Threat Intelligence & Hunting Platform</p>
-            <p className="description">
-              TI-Hunt empowers analysts and defenders to proactively hunt threats using real-time intelligence, automated scanning, and deep log analysis.
-            </p>
-          </div>
-
-          <div className="features">
-            <h2>Key Features</h2>
-            <div className="feature">
-              <div className="feature-icon">🧠</div>
-              <div className="feature-text">
-                <h3>Threat Intelligence Integration</h3>
-                <p>Fetch and analyze IOCs from leading threat feeds</p>
-              </div>
-            </div>
-            <div className="feature">
-              <div className="feature-icon">📂</div>
-              <div className="feature-text">
-                <h3>Log File Analysis</h3>
-                <p>Upload and parse logs to identify malicious activity</p>
-              </div>
-            </div>
-            <div className="feature">
-              <div className="feature-icon">🌐</div>
-              <div className="feature-text">
-                <h3>Scanning Tools</h3>
-                <p>Perform URL, file, and port scanning for suspicious behavior</p>
-              </div>
-            </div>
-          </div>
-
-          <footer>
-            <p>© 2025 TI-Hunt. All rights reserved.</p>
-          </footer>
+    <div className="login-container">
+      <div className="login-left">
+        <div className="logo-header">
+          <img src={logo} alt="TI-Hunt Logo" className="logo" />
+          <h1 className="gradient-text">TI-Hunt</h1>
         </div>
+        <p className="tagline">Threat Intelligence & Hunting Platform</p>
+        <ul className="features">
+          <li>🧠 Real-time Threat Intelligence</li>
+          <li>📂 Log File Analysis</li>
+          <li>🌐 URL, IP & File Scanning</li>
+        </ul>
+        <footer>© 2025 TI-Hunt. All rights reserved.</footer>
       </div>
 
-      <div className="panel right-panel">
-        <div className="form-container">
+      <div className="login-right">
+        <form className="login-form" onSubmit={handleSubmit}>
           <h2>{isSignup ? 'Create Account' : 'Welcome Back'}</h2>
-          <p className="form-subtitle">{isSignup ? 'Sign up for an account to get started' : 'Sign in to your account to continue'}</p>
 
-          <form onSubmit={handleSubmit} className="auth-form">
-            {isSignup && (
-              <div className="form-group">
-                <label htmlFor="name">Full Name</label>
-                <input type="text" name="name" placeholder="Enter your full name" value={formData.name} onChange={handleChange} />
-                <span className="error-message">{errors.name}</span>
-              </div>
-            )}
-
+          {isSignup && (
             <div className="form-group">
-              <label htmlFor="email">Email Address</label>
-              <input type="email" name="email" placeholder="Enter your email" value={formData.email} onChange={handleChange} />
-              <span className="error-message">{errors.email}</span>
+              <label>Full Name</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} />
+              {errors.name && <span className="error">{errors.name}</span>}
             </div>
+          )}
 
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-input">
-                <input type="password" name="password" placeholder="Enter your password" value={formData.password} onChange={handleChange} />
-                <button type="button" className="toggle-password" onClick={togglePassword}></button>
-              </div>
-              <span className="error-message">{errors.password}</span>
-            </div>
+          <div className="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value={formData.email} onChange={handleChange} />
+            {errors.email && <span className="error">{errors.email}</span>}
+          </div>
 
-            {isSignup && (
-              <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
-                <div className="password-input">
-                  <input type="password" name="confirmPassword" placeholder="Confirm your password" value={formData.confirmPassword} onChange={handleChange} />
-                  <button type="button" className="toggle-password" onClick={togglePassword}></button>
-                </div>
-                <span className="error-message">{errors.confirmPassword}</span>
-              </div>
-            )}
-
-            <div className="form-options">
-              <label className="remember-me">
-                <input type="checkbox" name="remember" checked={formData.remember} onChange={handleChange} />
-                <span>Remember me</span>
-              </label>
-              <a href="#" className="forgot-password">Forgot password?</a>
-            </div>
-
-            <button type="submit" className={`btn btn-primary ${loading ? 'loading' : ''}`}>
-              <span className="btn-text">{loading ? 'Please wait...' : isSignup ? 'Sign Up' : 'Sign In'}</span>
-              <span className="btn-loader"></span>
+          <div className="form-group password-group">
+            <label>Password</label>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+            />
+            <button type="button" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? '🙈' : '👁️'}
             </button>
+            {errors.password && <span className="error">{errors.password}</span>}
+          </div>
 
-            <div className="divider">
-              <span>Or continue with</span>
-            </div>
-
-            <a href="mainpage.html">
-              <button type="button" className="btn btn-google">
-                <span className="google-icon"></span>
-                <span>Continue with Google</span>
+          {isSignup && (
+            <div className="form-group password-group">
+              <label>Confirm Password</label>
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+              />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                {showConfirmPassword ? '🙈' : '👁️'}
               </button>
-            </a>
-          </form>
+              {errors.confirmPassword && <span className="error">{errors.confirmPassword}</span>}
+            </div>
+          )}
 
-          <p className="toggle-prompt">
-            <span>{isSignup ? 'Already have an account?' : "Don't have an account?"}</span>
-            <button type="button" className="toggle-btn" onClick={() => setIsSignup(!isSignup)}>
+          <div className="form-options">
+            <label>
+              <input type="checkbox" name="remember" checked={formData.remember} onChange={handleChange} />
+              Remember me
+            </label>
+            <button type="button" className="link">Forgot password?</button>
+          </div>
+
+          <button type="submit" className="submit-btn" disabled={loading}>
+            {loading ? 'Please wait...' : isSignup ? 'Sign Up' : 'Sign In'}
+          </button>
+
+          <p className="switch-mode">
+            {isSignup ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <button type="button" className="link" onClick={() => setIsSignup(!isSignup)}>
               {isSignup ? 'Sign in' : 'Sign up'}
             </button>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );

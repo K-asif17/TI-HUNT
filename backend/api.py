@@ -2,7 +2,7 @@ import requests
 import time
 import base64
 
-VT_API_KEY = "YOUR_VIRUSTOTAL_API_KEY"  # Replace with your actual API key
+VT_API_KEY = "VIRUS TOTAL API KEY"
 HEADERS = {"x-apikey": VT_API_KEY}
 
 def scan_url(url):
@@ -92,3 +92,4 @@ def scan_file(file_obj):
         else:
             print("Waiting for analysis to complete...")
             time.sleep(3)
+

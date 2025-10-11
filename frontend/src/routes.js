@@ -5,6 +5,9 @@ import LogAnalysisPage from './components/mainpage/mainpage';
 import IPScanner from './components/IPSCAN/ipscan';
 import URLScanner from './components/URLSCAN/urlscan';
 import HashScanner from './components/HASH/hashscan';
+import ThreatFeedPage from './components/ThreatFeed/threatfeed';
+import AboutPage from './components/about/about';
+import Results from './components/result/result';
 
 function AppRoutes() {
   return (
@@ -15,7 +18,10 @@ function AppRoutes() {
         <Route path="/main" element={<LogAnalysisPage />} />
         <Route path="/ipscan" element={<IPScanner />} />
         <Route path="/urlscan" element={<URLScanner />} />
-       <Route path="/hashscan" element={<HashScanner/>}/>      
+       <Route path="/hashscan" element={<HashScanner/>}/> 
+       <Route path="/threatfeed" element={<ThreatFeedPage />} /> 
+       <Route path="/about" element={<AboutPage />} />  
+       <Route path="/results" element={<Results />} />  
        </Routes>
     </Router>
   );
