@@ -58,7 +58,7 @@ SQLALCHEMY_DATABASE_URI=sqlite:///ti_hunt.db
 Run the backend:
 
 ```bash
-flask run
+python3 app.py
 ```
 
 Backend runs at: **http://localhost:5000**
